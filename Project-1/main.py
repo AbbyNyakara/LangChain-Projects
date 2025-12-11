@@ -1,30 +1,33 @@
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from langchainhub import hub
-from langchain_tavily import TavilySearch
-from langchain.agents import AgentExecutor
-from langchain.agents.react.agent import create_react_agent
+from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain.tools import tool
+from langchain.agents import create_agent
+from schemas import AgentResponse  
 
 load_dotenv()
 
-tools = [TavilySearch()]
-llm = ChatOpenAI(model='gpt-4', temperature=0)
+@tool
+def search_linkedin_jobs(query: str) -> str:
+    """Search LinkedIn for AI/NLP engineer job postings."""
+    return TavilySearchResults(max_results=3).invoke(query)
 
-react_prompt = hub.pull('hwchase17/react')
+tools = [TavilySearchResults(max_results=3)]  # Or just [TavilySearchResults(max_results=3)]
+llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
-agent = create_react_agent(
-    llm=llm,
-    tools=tools,
-    prompt=react_prompt
+agent = create_agent(
+    model=llm,
+    tools=tools
 )
 
-agent_executor=AgentExecutor(agent=agent, tool=tools, verbose=True)
-chain = agent_executor
-
-
 def main():
-    print("Hello from project-1!")
-
+    result = agent.invoke({
+        "messages": [{"role": "user", 
+                      "content": "Search for 3 job postings for AI engineer"
+                      "/NLP engineer using LinkedIn"}]
+    })
+    
+    print(result)
 
 if __name__ == "__main__":
     main()

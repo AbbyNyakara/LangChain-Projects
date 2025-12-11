@@ -13,4 +13,5 @@ dependencies = [
     "langchainhub>=0.1.21",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.1",
+    "schemas>=0.7.1",
 ]
