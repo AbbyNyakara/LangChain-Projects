@@ -3,6 +3,7 @@ from langchain.tools import tool
 from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import render_text_description
 from langchain_openai import ChatOpenAI
+from langchain.agents import create_react_agent, AgentExecutor
 
 load_dotenv()
 '''
@@ -51,8 +52,11 @@ if __name__ == "__main__":
 
     llm = ChatOpenAI(temperature=0, stop=["\nObservation"])
     # lcel - pipe operator takesthe output from the left into the right
-    agent = {"input": lambda x: x["input"]} | prompt | llm
+    # agent = {"input": lambda x: x["input"]} | prompt | llm | ReActOutputParser()
+    agent = create_react_agent(llm, tool, prompt)
+    agent_executor = AgentExecutor(agent=agent, tools=tools, handle_parsing_errors=True)
+    response = agent_executor.invoke({"input": "What is the number of characters in the word 'DOG'"})
 
-    response = agent.invoke(
-        {"input": "What is the number of characters in the word 'DOG' "})
+    # response = agent.invoke(
+    #     {"input": "What is the number of characters in the word 'DOG' "})
     print(response)
