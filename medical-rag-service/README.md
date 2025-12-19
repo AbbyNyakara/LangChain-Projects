@@ -1,8 +1,8 @@
 medical-rag-service/
 │
-├── pyproject.toml                 # Poetry config & dependencies
-├── poetry.lock
-├── .env
+├── pyproject.toml                 # uv config & dependencies
+├── uv.lock
+├── .env.                          # Environment variables 
 ├── .gitignore
 ├── README.md
 │
@@ -42,10 +42,10 @@ medical-rag-service/
 │   │   └── pipeline.py            # Main RAG pipeline (ties everything together)
 │   │
 │   ├── api/                       # FastAPI endpoints
-│   │   ├── __init__.py
-│   │   ├── router.py              # API routes
-│   │   ├── models.py              # Pydantic models (request/response)
-│   │   └── dependencies.py        # Dependency injection
+│       ├── __init__.py
+│       ├── router.py              # API routes
+│       ├── models.py              # Pydantic models (request/response)
+│       └── dependencies.py        # Dependency injection
 │
 ├── tests/                         # Test suite
 │   ├── __init__.py
