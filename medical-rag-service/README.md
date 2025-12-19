@@ -95,7 +95,7 @@ mkdir -p data
 cp /path/to/your/document.pdf data/
 ```
 
-Or use the included sample: `data/fake-aps.pdf`
+Or use the included sample: `data/fake-data.pdf`
 
 ## Running the Application
 
@@ -158,35 +158,6 @@ echo "OPENAI_API_KEY=sk-your-key-here" > .env
 uv run python api/main.py
 ```
 
-### Step 3: Test Health Check (Optional)
-
-```bash
-curl http://localhost:8000/health
-```
-
-### Step 4: Ingest a Document (First Time Only)
-
-Go to http://localhost:8000/docs and use the `/ingest` endpoint:
-
-**Or use Python:**
-
-```python
-import requests
-
-response = requests.post(
-    "http://localhost:8000/ingest",
-    json={"pdf_path": "./data/fake-aps.pdf"}
-)
-print(response.json())
-```
-
-### Step 5: Query the RAG
-
-```bash
-curl -X POST http://localhost:8000/query \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What medications does the patient take?"}'
-```
 
 ## API Endpoints
 
@@ -206,39 +177,6 @@ Query the RAG system with a question.
 {
   "answer": "The patient presents with...",
   "num_sources": 3
-}
-```
-
-### `POST /ingest`
-
-Ingest a PDF document into the vector store.
-
-**Request:**
-```json
-{
-  "pdf_path": "./data/fake-aps.pdf"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "message": "Ingested 25 chunks",
-  "num_chunks": 25,
-  "pdf_path": "./data/fake-aps.pdf"
-}
-```
-
-### `GET /health`
-
-Check if the vector store is loaded.
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "vector_store_loaded": true
 }
 ```
 
@@ -276,11 +214,6 @@ curl -X POST http://localhost:8000/ingest \
 uv run python api/main.py --port 8001
 ```
 
-Or kill the existing process:
-```bash
-lsof -i :8000  # Find process
-kill -9 <PID>  # Kill it
-```
 
 ## Development
 
@@ -292,12 +225,6 @@ The API already has `reload=True` enabled. Code changes will automatically resta
 
 Edit `api/main.py` to add new endpoints:
 
-```python
-@app.post('/new-endpoint')
-def new_endpoint(request: YourModel):
-    """Your endpoint description"""
-    return {"result": "..."}
-```
 
 ### Modify Prompts
 
