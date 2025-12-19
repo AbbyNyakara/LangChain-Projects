@@ -34,7 +34,7 @@ medical-rag-service/
 │   ├── generation/                # LLM-based answer generation
 │   │   ├── __init__.py
 │   │   ├── openai_llm.py          # OpenAI integration
-│   │   ├── meditron_llm.py        # Meditron integration (Specialized medical LLM by Llama)
+│   │   ├── meditron_llm.py        # Meditron integration (Specialized medical LLM) - REQUIRES GPU
 │   │   └── prompt_template.py     # Prompt engineering
 │   │
 │   ├── rag/                       # RAG orchestration
@@ -46,11 +46,6 @@ medical-rag-service/
 │   │   ├── router.py              # API routes
 │   │   ├── models.py              # Pydantic models (request/response)
 │   │   └── dependencies.py        # Dependency injection
-│   │
-│   └── utils/                     # Utility functions
-│       ├── __init__.py
-│       ├── logging.py             # Logging setup
-│       └── validators.py          # Input validation
 │
 ├── tests/                         # Test suite
 │   ├── __init__.py

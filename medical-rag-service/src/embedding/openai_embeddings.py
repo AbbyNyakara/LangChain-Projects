@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-class embeddingService:
+class EmbeddingService:
     def __init__(self, model: str = "text-embedding-3-small"):
         """
         Initialize embedding service with selected model
@@ -17,6 +17,7 @@ class embeddingService:
         Embed multiple text chunks.
         Args:chunks: List of text strings to embed.  
         Returns:List of embedding vectors
+        p:s - this is directly handled in the create_vector_store(embedds and stores in chroma db)
         """
 
         vectors = self.embeddings.embed_documents(chunks)

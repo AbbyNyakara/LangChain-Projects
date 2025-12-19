@@ -14,9 +14,10 @@ load_dotenv()
 class VectorStoreService:
     '''
     Manages all vector store operations
+
     '''
 
-    def __init__(self, collection_name: str = 'medical_notes', persist_directory: str = "./chroma_db"):
+    def __init__(self, collection_name: str = 'medical_notes', persist_directory: str = "chroma_db"):
         self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
         self.collection_name = collection_name
         self.persist_dir = persist_directory
@@ -24,7 +25,7 @@ class VectorStoreService:
 
     def create_vector_store(self, chunks: list[str]):
         '''
-        Store Chunks in chroma DB   
+        Store Chunks in chroma DB  in the root directory
         '''
 
         self.vector_store = Chroma.from_texts(
@@ -61,14 +62,10 @@ class VectorStoreService:
         )
 
     def retrieve_and_hydrate(self, query: str, k: int = 3) -> dict:
-
         retriever = self.as_retriever(k=k)
-
-        # Invoke retriever (does vectorization + similarity search internally)
-        docs = retriever.invoke(query)
-
-        # Join all chunk content into single context string
-        context = "\n\n".join([doc.page_content for doc in docs])
+        docs = retriever.invoke(query)  # vectorization + similarity search
+        context = "\n\n".join(
+            [doc.page_content for doc in docs])  # Join chunks
 
         return {
             "context": context,
