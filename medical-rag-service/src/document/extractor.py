@@ -11,7 +11,6 @@ page.get_text(), and the results are joined with newline characters.
 
 from pathlib import Path
 import pymupdf  # PyMuPDF
-import os
 
 
 def extract_pdf_text(path: Path) -> str:

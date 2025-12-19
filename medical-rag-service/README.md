@@ -29,14 +29,12 @@ medical-rag-service/
 │   │
 │   ├── retrieval/                 # Vector DB & retrieval
 │   │   ├── __init__.py
-│   │   ├── base.py                # Base retrieval interface
-│   │   ├── faiss_db.py            # FAISS implementation
-│   │   └── pinecone_db.py         # Pinecone implementation (optional)
+│   │   └── chroma_db.py         # Chroma implementation
 │   │
 │   ├── generation/                # LLM-based answer generation
 │   │   ├── __init__.py
-│   │   ├── base.py                # Base LLM interface
 │   │   ├── openai_llm.py          # OpenAI integration
+│   │   ├── meditron_llm.py        # Meditron integration (Specialized medical LLM by Llama)
 │   │   └── prompt_template.py     # Prompt engineering
 │   │
 │   ├── rag/                       # RAG orchestration
