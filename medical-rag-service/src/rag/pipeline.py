@@ -16,7 +16,6 @@ from langchain_core.runnables import RunnablePassthrough
 
 load_dotenv()
 
-
 class RAGPipeline:
     def __init__(self, collection_name='medical_notes', model: str = "gpt-4o-mini", persist_directory: str = None):
 
@@ -32,10 +31,10 @@ class RAGPipeline:
         self.generate_service = GenerateService(model=model)
         self.prompt_template = MEDICAL_ASSISTANT_PROMPT
 
-        # Load vector Store - handle edge case when vector hasn't been created
+        # Load vector Store 
         try:
             self.vector_store_service.load_vector_store()
-        except Exception as e:
+        except Exception as e: # incase it hasnt been created
             print(f"Note: Could not load existing vector store: {e}")
             print("A new vector store will be created upon ingestion.")
 
@@ -44,7 +43,6 @@ class RAGPipeline:
 
     def _build_chain(self):
         """Builds the LangChain retriever -> context preparation -> LLM """
-        # Get retriever
         retriever = self.vector_store_service.as_retriever(k=3)
 
         rag_chain = (
@@ -109,50 +107,3 @@ class RAGPipeline:
             print(f"Error during ingestion: {e}")
             raise
 
-
-if __name__ == "__main__":
-    # Paths
-    project_root = src_dir.parent
-    pdf_path = project_root / "data" / "fake-aps.pdf"
-    chroma_db_path = project_root / "chroma_db"
-
-    # Initialize pipeline
-    print("🚀 Initializing RAG Pipeline...")
-    pipeline = RAGPipeline(persist_directory=str(chroma_db_path))
-    print("   ✓ Pipeline ready!\n")
-
-    # Check if we need to ingest first
-    try:
-        # Try a test query first
-        test_question = "What are the patient's symptoms?"
-        print(f"❓ Test Question: {test_question}")
-        print("-" * 60)
-
-        result = pipeline.query(test_question)
-
-        print(f"\n💬 Answer:\n{result['answer']}")
-        print(f"\n📚 Sources: {result['num_sources']} documents")
-
-        if result['num_sources'] > 0:
-            print("\n📄 Source documents (first 300 chars each):")
-            for i, doc in enumerate(result['sources'], start=1):
-                print(f"\n--- Source {i} ---")
-                print(
-                    doc.page_content[:300] + "..." if len(doc.page_content) > 300 else doc.page_content)
-        else:
-            print("\n⚠️ No sources found. The vector store might be empty.")
-            print(f"Would you like to ingest the PDF at {pdf_path}?")
-            # You could add logic here to ask for ingestion
-            if pdf_path.exists():
-                print("Ingesting PDF...")
-                chunks = pipeline.ingest(pdf_path)
-                print(f"Ingested {len(chunks)} chunks")
-
-                # Now try querying again
-                print("\n" + "-" * 60)
-                print("Trying query again after ingestion...")
-                result = pipeline.query(test_question)
-                print(f"\n💬 Answer:\n{result['answer']}")
-
-    except Exception as e:
-        print(f"Error during execution: {e}")

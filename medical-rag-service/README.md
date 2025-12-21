@@ -7,14 +7,15 @@ A Retrieval-Augmented Generation (RAG) system for querying PDF medical documents
 - 📄 **PDF Ingestion**: Extract and process medical documents
 - 🔍 **Semantic Search**: Retrieve relevant context from documents using embeddings
 - 🤖 **LLM Integration**: Generate answers using GPT-4o-mini
-- 🚀 **REST API**: Simple FastAPI endpoint for querying 
+- 🚀 **REST API**: Simple FastAPI endpoint for querying
 - 💾 **Vector Database**: ChromaDB for efficient document storage and retrieval
 
 ## Project Structure
 
 ```
 medical-rag-service/
-
+├── api/
+│   └── main.py         # Sample PDF (for testing)
 ├── src/
 │   ├── chunking/
 │   │   └── semantic.py      # Text chunking logic
@@ -30,7 +31,7 @@ medical-rag-service/
 ├── data/
 │   └── fake-aps.pdf         # Sample PDF (for testing)
 ├── chroma_db/               # Vector store (created after ingestion)
-├── main.py                  # Fast API appliction (Main entry point)
+├── main.py                  # Application Entry point
 ├── .env                     # Environment variables
 ├── pyproject.toml           # Python dependencies
 └── README.md                # This file
@@ -47,7 +48,8 @@ medical-rag-service/
 ### 1. Clone and Navigate to Project
 
 ```bash
-git clone 
+git clone https://github.com/AbbyNyakara/LangChain-Projects.git
+cd medical-rag-service
 
 ```
 
@@ -58,6 +60,7 @@ uv sync
 ```
 
 This installs all dependencies from `pyproject.toml`, including:
+
 - `fastapi` - Web framework
 - `uvicorn` - ASGI server
 - `langchain` - LLM orchestration
@@ -81,6 +84,7 @@ OPENAI_API_KEY=sk-your-api-key-here
 ```
 
 **To get your API key:**
+
 1. Go to [OpenAI API Keys](https://platform.openai.com/api/keys)
 2. Create a new secret key
 3. Copy and paste it into `.env`
@@ -115,6 +119,7 @@ INFO:     Application startup complete
 ### Access the API
 
 **Interactive Documentation (Swagger UI):**
+
 - Open http://localhost:8000/docs in your browser
 - Test endpoints directly in the UI
 
@@ -129,6 +134,7 @@ curl -X POST http://localhost:8000/query \
 ```
 
 **Response:**
+
 ```json
 {
   "answer": "The patient presents with...",
@@ -158,7 +164,6 @@ echo "OPENAI_API_KEY=sk-your-key-here" > .env
 uv run python api/main.py
 ```
 
-
 ## API Endpoints
 
 ### `POST /query`
@@ -166,6 +171,7 @@ uv run python api/main.py
 Query the RAG system with a question.
 
 **Request:**
+
 ```json
 {
   "question": "What are the patient's symptoms?"
@@ -173,6 +179,7 @@ Query the RAG system with a question.
 ```
 
 **Response:**
+
 ```json
 {
   "answer": "The patient presents with...",
@@ -185,6 +192,7 @@ Query the RAG system with a question.
 ### `ModuleNotFoundError: No module named 'generation'`
 
 **Solution:** Make sure you're running from the project root:
+
 ```bash
 cd /Users/abigaelmogusu/projects/LangChain-Projects/medical-rag-service
 uv run python api/main.py
@@ -193,6 +201,7 @@ uv run python api/main.py
 ### `openai.error.AuthenticationError`
 
 **Solution:** Check your `.env` file has a valid API key:
+
 ```bash
 cat .env  # Should show OPENAI_API_KEY=sk-...
 ```
@@ -210,10 +219,10 @@ curl -X POST http://localhost:8000/ingest \
 ### Port 8000 already in use
 
 **Solution:** Use a different port:
+
 ```bash
 uv run python api/main.py --port 8001
 ```
-
 
 ## Development
 
@@ -224,7 +233,6 @@ The API already has `reload=True` enabled. Code changes will automatically resta
 ### Add More Endpoints
 
 Edit `api/main.py` to add new endpoints:
-
 
 ### Modify Prompts
 
@@ -253,6 +261,7 @@ MIT
 ## Support
 
 For issues or questions, check:
+
 1. `.env` has valid `OPENAI_API_KEY`
 2. Running from project root
 3. Vector store is initialized (run `/ingest` first if needed)

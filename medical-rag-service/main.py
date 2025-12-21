@@ -1,46 +1,46 @@
-'''
-Docstring for api.main
-
-Creates a minimalistic API to access the medical RAG
-'''
 import sys
 from pathlib import Path
+from contextlib import asynccontextmanager
 
-src_dir = Path(__file__).parent.parent / "src"
+# Setup paths
+src_dir = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_dir))
 
-import uvicorn
-# from rag.pipeline import RAGPipeline
-from src.rag.pipeline import RAGPipeline
-from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from fastapi import FastAPI
-
+import uvicorn
+from api.main import app
+from src.rag.pipeline import RAGPipeline
 
 load_dotenv()
 
-app = FastAPI(title="Medical RAG Api")
+rag_pipeline = None
 
-rag_pipeline = RAGPipeline()
+@asynccontextmanager
+async def lifespan(app):
+    """Startup and shutdown logic"""
+    global rag_pipeline
+    
+    # STARTUP
+    project_root = Path(__file__).parent
+    chroma_db_path = project_root / "chroma_db"
+    pdf_path = project_root / "data" / "fake-aps.pdf"
+    
+    rag_pipeline = RAGPipeline(persist_directory=str(chroma_db_path))
+    
+    # Auto-ingest if vector store is empty
+    result = rag_pipeline.query("What are the patient's symptoms?")
+    if result["num_sources"] == 0 and pdf_path.exists():
+        rag_pipeline.ingest(pdf_path)
+    
+    # Set pipeline in the app
+    import api.main
+    api.main.rag_pipeline = rag_pipeline
+    
+    yield
+    
 
-
-class UserQuery(BaseModel):
-    question: str = Field(
-        ..., #Requiredd field
-        example="What are the patient's symptoms?",
-        description="Medical question or query to be processed by the RAG pipeline"
-    )
-
-
-@app.post('/query')
-def query(request: UserQuery):
-    """Sends Query to the medical RAG"""
-    result = rag_pipeline.query(request.question)
-    return {
-        "answer": result["answer"],
-        "num_sources": result['num_sources']
-    }
-
+# Add lifespan to app
+app.router.lifespan = lifespan
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="localhost", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
