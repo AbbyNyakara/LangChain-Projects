@@ -14,8 +14,7 @@ A Retrieval-Augmented Generation (RAG) system for querying PDF medical documents
 
 ```
 medical-rag-service/
-├── api/
-│   └── main.py              # FastAPI application
+
 ├── src/
 │   ├── chunking/
 │   │   └── semantic.py      # Text chunking logic
@@ -31,6 +30,7 @@ medical-rag-service/
 ├── data/
 │   └── fake-aps.pdf         # Sample PDF (for testing)
 ├── chroma_db/               # Vector store (created after ingestion)
+├── main.py                  # Fast API appliction (Main entry point)
 ├── .env                     # Environment variables
 ├── pyproject.toml           # Python dependencies
 └── README.md                # This file
