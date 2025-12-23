@@ -1,3 +1,5 @@
+
+
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv  # api key
 from langchain_core.prompts import PromptTemplate

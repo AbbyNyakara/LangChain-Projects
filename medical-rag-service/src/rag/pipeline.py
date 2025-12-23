@@ -10,7 +10,7 @@ from generation.prompt_template import MEDICAL_ASSISTANT_PROMPT
 from retrieval.chroma_db import VectorStoreService
 from embedding.openai_embeddings import EmbeddingService
 from chunking.semantic import chunk_text
-from document.extractor import extract_pdf_text
+from extractor.extractor import extract_pdf_text
 from langchain_core.runnables import RunnablePassthrough
 
 
