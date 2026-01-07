@@ -9,9 +9,10 @@ from generation.openai_llm import GenerateService
 from generation.prompt_template import MEDICAL_ASSISTANT_PROMPT
 from retrieval.chroma_db import VectorStoreService
 from embedding.openai_embeddings import EmbeddingService
-from chunking.semantic import chunk_text
-from extractor.extractor import extract_pdf_text
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel
+from extractor.extractor import PDFExtractor
+from chunking.recursive_chunking import TextChunker
+
 
 
 load_dotenv()
@@ -35,7 +36,7 @@ class RAGPipeline:
         # Load vector Store - handle edge case when vector hasn't been created
         try:
             self.vector_store_service.load_vector_store()
-        except Exception as e:
+        except ValueError as e:
             print(f"Note: Could not load existing vector store: {e}")
             print("A new vector store will be created upon ingestion.")
 
@@ -89,11 +90,14 @@ class RAGPipeline:
         """Ingests a pdf document into the vector store"""
         try:
             # Extract pdf
-            text = extract_pdf_text(pdf_path)
+            extractor = PDFExtractor(pdf_path)
+            # text = extract_pdf_text(pdf_path)
+            text = extractor.extract()
             print(f"✓ Extracted {len(text)} characters from PDF")
 
             # Generate the chunks
-            chunks = chunk_text(text=text)
+            chunker = TextChunker()
+            chunks = chunker.chunk(text)
             print(f"✓ Created {len(chunks)} chunks from the document")
 
             # Store in vector DB
@@ -111,27 +115,23 @@ class RAGPipeline:
 
 
 if __name__ == "__main__":
-    # Paths
-    project_root = src_dir.parent
+    project_root = src_dir.parent 
     pdf_path = project_root / "data" / "fake-aps.pdf"
     chroma_db_path = project_root / "chroma_db"
 
     # Initialize pipeline
-    print("🚀 Initializing RAG Pipeline...")
     pipeline = RAGPipeline(persist_directory=str(chroma_db_path))
-    print("   ✓ Pipeline ready!\n")
 
     # Check if we need to ingest first
     try:
-        # Try a test query first
-        test_question = "What are the patient's symptoms?"
-        print(f"❓ Test Question: {test_question}")
-        print("-" * 60)
+        test_question = "What is the patient's Age?"
+        # print(f"❓ Test Question: {test_question}")
+        # print("-" * 60)
 
         result = pipeline.query(test_question)
 
         print(f"\n💬 Answer:\n{result['answer']}")
-        print(f"\n📚 Sources: {result['num_sources']} documents")
+        # print(f"\n📚 Sources: {result['num_sources']} documents")
 
         if result['num_sources'] > 0:
             print("\n📄 Source documents (first 300 chars each):")
@@ -140,8 +140,8 @@ if __name__ == "__main__":
                 print(
                     doc.page_content[:300] + "..." if len(doc.page_content) > 300 else doc.page_content)
         else:
-            print("\n⚠️ No sources found. The vector store might be empty.")
-            print(f"Would you like to ingest the PDF at {pdf_path}?")
+            # print("\n⚠️ No sources found. The vector store might be empty.")
+            # print(f"Would you like to ingest the PDF at {pdf_path}?")
             # You could add logic here to ask for ingestion
             if pdf_path.exists():
                 print("Ingesting PDF...")

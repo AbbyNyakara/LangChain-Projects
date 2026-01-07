@@ -1,4 +1,8 @@
+import sys
+from pathlib import Path
 
+src_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(src_dir))
 
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv  # api key
@@ -9,7 +13,7 @@ load_dotenv()
 
 class GenerateService:
     '''
-    Generate answer based on Open AI models
+    Generate answer based on Open AI model
     '''
 
     def __init__(self, model: str = 'gpt-5'):

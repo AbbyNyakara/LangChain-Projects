@@ -1,12 +1,18 @@
 """
 Docstring for src.vector_store.chroma
-
 This module handles the Chroma DB storage and retrival
 """
+import sys
+from pathlib import Path
+src_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(src_dir))
 
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
+from extractor.extractor import PDFExtractor
+from chunking.recursive_chunking import TextChunker
+
 
 load_dotenv()
 
@@ -14,10 +20,9 @@ load_dotenv()
 class VectorStoreService:
     '''
     Manages all vector store operations
-
     '''
 
-    def __init__(self, collection_name: str = 'medical_notes', persist_directory: str = "chroma_db"):
+    def __init__(self, collection_name: str = 'medical_notes', persist_directory: str = "./chroma_db"):
         self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
         self.collection_name = collection_name
         self.persist_dir = persist_directory
@@ -35,7 +40,7 @@ class VectorStoreService:
             persist_directory=self.persist_dir
         )
 
-        # print(f"Created vector store with {len(chunks)} chunks")
+        print(f"Created vector store with {len(chunks)} chunks")
         return self.vector_store
 
     def load_vector_store(self):
@@ -61,7 +66,7 @@ class VectorStoreService:
             search_kwargs={'k': k}
         )
 
-    def retrieve_and_hydrate(self, query: str, k: int = 3) -> dict:
+    def retrieve_and_hydrate(self, query: str, k: int=3 ) -> dict:
         retriever = self.as_retriever(k=k)
         docs = retriever.invoke(query)  # vectorization + similarity search
         context = "\n\n".join(
@@ -72,3 +77,12 @@ class VectorStoreService:
             "source_docs": docs,
             "num_results": len(docs)
         }
+
+# Usage
+extractor = PDFExtractor()
+extracted_text = extractor.extract()
+chunker = TextChunker()
+chunks = chunker.chunk(extracted_text)
+store = VectorStoreService()
+print(store.create_vector_store(chunks))
+print(store.retrieve_and_hydrate(query="What is the patient's name?"))
