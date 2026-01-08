@@ -214,5 +214,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-data/
+# data/
 chroma_db/
+chroma_db
