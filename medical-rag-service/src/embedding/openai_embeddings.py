@@ -3,7 +3,7 @@ from pathlib import Path
 src_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(src_dir))
 
-from chunking.recursive_chunking import TextChunker
+from src.chunking.chunker import TextChunker
 from extractor.extractor import PDFExtractor
 from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv

@@ -11,7 +11,7 @@ from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
 from extractor.extractor import PDFExtractor
-from chunking.recursive_chunking import TextChunker
+from src.chunking.chunker import TextChunker
 
 
 load_dotenv()

@@ -46,10 +46,6 @@ class DocumentOCRExtractor:
         '''
         Performs OCR text extraction from the specified location within the s3 bucket (s3_key)
         '''
-        # unique_id = uuid.uuid4().hex[:8]
-        # timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        # output_prefix = f"extracted/{timestamp}_{unique_id}/"
-
         response = self.textract.start_document_analysis(
             DocumentLocation={
                 'S3Object': {
@@ -57,10 +53,6 @@ class DocumentOCRExtractor:
                     'Name': s3_key,
                 }
             },
-            # OutputConfig={  # Save results to S3
-            #     'S3Bucket': self.bucket,
-            #     'S3Prefix': 'results/'
-            # },
             FeatureTypes=['TABLES', 'FORMS', 'LAYOUT']
         )
 
@@ -166,7 +158,6 @@ class DocumentOCRExtractor:
             'saved_text_to': text_key,
             'text_length': len(extracted_text)
         }
-    
 
 
 # if __name__ == "__main__":
@@ -175,11 +166,11 @@ class DocumentOCRExtractor:
 #         bucket='medical-rag-docs-abigael-2026',
 #         region='us-east-1'
 #     )
-    
+
 #     try:
 #         # Process a document
 #         result = extractor.process_document('/Users/abigaelmogusu/projects/LangChain-Projects/medical-rag-service/data/fake-aps.pdf')
-        
+
 #         print("\n=== PROCESSING RESULTS ===")
 #         print(f"Original file: {result['original_file']}")
 #         print(f"Uploaded to: {result['uploaded_to']}")
@@ -187,13 +178,12 @@ class DocumentOCRExtractor:
 #         print(f"Text length: {result['text_length']} characters")
 #         print(f"\nExtracted text preview:")
 #         print(result['extracted_text'][:500])
-        
+
 #         # Now you can use the extracted text for RAG
 #         # text = result['extracted_text']
 #         # ... process with your RAG pipeline ...
-        
+
 #     finally:
 #         # Always cleanup at the end
 
 #         print(f"\n=== CLEANUP ===")
-

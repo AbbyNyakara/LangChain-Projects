@@ -11,7 +11,7 @@ from retrieval.chroma_db import VectorStoreService
 from embedding.openai_embeddings import EmbeddingService
 from langchain_core.runnables import RunnablePassthrough, RunnableParallel
 from extractor.extractor import PDFExtractor
-from chunking.recursive_chunking import TextChunker
+from src.chunking.chunker import TextChunker
 
 
 
