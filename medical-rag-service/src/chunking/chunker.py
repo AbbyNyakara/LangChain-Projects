@@ -2,25 +2,18 @@ import boto3
 import uuid
 import logging
 from typing import Dict, List, Optional
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from datetime import datetime
 from pathlib import Path
 import json
-
-
 import sys
-from pathlib import Path
-
-# Add project root to Python path
-project_root = Path(__file__).parent.parent.parent  # Goes up 3 levels to medical-rag-service/
+project_root = Path(__file__).parent.parent.parent  
 sys.path.insert(0, str(project_root))
-#from extractor.document_extractor import DocumentOCRExtractor
-from src.extractor.document_extractor import DocumentOCRExtractor
 
+from src.extractor.document_extractor import DocumentOCRExtractor
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-
 
 class DocumentChunkingPipeline:
     '''
@@ -36,7 +29,7 @@ class DocumentChunkingPipeline:
     def fetch_extracted_text(self, s3_key: str):
         """
         Fetch the extracted text file from S3.
-        This is the output from DocumentOCRExtractor.save_extracted_text()
+        Fetching output from DocumentOCRExtractor.save_extracted_text()
 
         Args:
             text_s3_key: S3 key of the extracted text file (e.g 'extracted/20260108_abc123_fake-aps.txt')
@@ -97,7 +90,7 @@ class DocumentChunkingPipeline:
                 'total_chunks': len(chunks),
                 'chunk_size': len(chunk),
                 'created_at': datetime.now().isoformat(),
-                'processing_stage': 'chunked'  # Tracking pipeline stage
+                'processing_stage': 'chunked'  
             }
             metadata_list.append(metadata)
 
@@ -220,10 +213,3 @@ class DocumentChunkingPipeline:
         except Exception as e:
             logger.error("Failed to fetch chunks %s", e)
             raise
-
-
-
-    
-
-
-

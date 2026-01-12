@@ -1,8 +1,8 @@
+from pathlib import Path
+from typing import Dict, List
 import uuid
 from datetime import datetime
 import boto3
-from typing import Dict, List
-from pathlib import Path
 import time
 
 
@@ -158,32 +158,3 @@ class DocumentOCRExtractor:
             'saved_text_to': text_key,
             'text_length': len(extracted_text)
         }
-
-
-# if __name__ == "__main__":
-#     # Initialize extractor
-#     extractor = DocumentOCRExtractor(
-#         bucket='medical-rag-docs-abigael-2026',
-#         region='us-east-1'
-#     )
-
-#     try:
-#         # Process a document
-#         result = extractor.process_document('/Users/abigaelmogusu/projects/LangChain-Projects/medical-rag-service/data/fake-aps.pdf')
-
-#         print("\n=== PROCESSING RESULTS ===")
-#         print(f"Original file: {result['original_file']}")
-#         print(f"Uploaded to: {result['uploaded_to']}")
-#         print(f"Text saved to: {result['saved_text_to']}")
-#         print(f"Text length: {result['text_length']} characters")
-#         print(f"\nExtracted text preview:")
-#         print(result['extracted_text'][:500])
-
-#         # Now you can use the extracted text for RAG
-#         # text = result['extracted_text']
-#         # ... process with your RAG pipeline ...
-
-#     finally:
-#         # Always cleanup at the end
-
-#         print(f"\n=== CLEANUP ===")
