@@ -10,6 +10,10 @@ A Retrieval-Augmented Generation (RAG) system for querying PDF medical documents
 - 🚀 **REST API**: Simple FastAPI endpoint for querying
 - 💾 **Vector Database**: ChromaDB for efficient document storage and retrieval
 
+## The Data flow: 
+
+Extractor Text (OCR)-> Chunking -> Embedding -> Storage (Chroma DB) -> User Asks Question -> Embed User Query (Vectorize) -> Similarity Search of vector store to find close vectors+Associated content -> Pass retrieved content onto Prompt template (Hydrating)-> Pass hydrated prompt to LLM Return Response to user
+
 ## Project Structure
 
 ```

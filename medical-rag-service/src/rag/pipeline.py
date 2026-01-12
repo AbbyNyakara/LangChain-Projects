@@ -9,9 +9,10 @@ from generation.openai_llm import GenerateService
 from generation.prompt_template import MEDICAL_ASSISTANT_PROMPT
 from retrieval.chroma_db import VectorStoreService
 from embedding.openai_embeddings import EmbeddingService
-from chunking.semantic import chunk_text
-from document.extractor import extract_pdf_text
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel
+from extractor.extractor import PDFExtractor
+from src.chunking.chunker import TextChunker
+
 
 
 load_dotenv()
@@ -87,11 +88,14 @@ class RAGPipeline:
         """Ingests a pdf document into the vector store"""
         try:
             # Extract pdf
-            text = extract_pdf_text(pdf_path)
+            extractor = PDFExtractor(pdf_path)
+            # text = extract_pdf_text(pdf_path)
+            text = extractor.extract()
             print(f"✓ Extracted {len(text)} characters from PDF")
 
             # Generate the chunks
-            chunks = chunk_text(text=text)
+            chunker = TextChunker()
+            chunks = chunker.chunk(text)
             print(f"✓ Created {len(chunks)} chunks from the document")
 
             # Store in vector DB

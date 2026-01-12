@@ -1,8 +1,14 @@
+import sys
+from pathlib import Path
+src_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(src_dir))
+
+from src.chunking.chunker import TextChunker
+from extractor.extractor import PDFExtractor
 from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
 
 load_dotenv()
-
 
 class EmbeddingService:
     def __init__(self, model: str = "text-embedding-3-small"):
@@ -30,3 +36,12 @@ class EmbeddingService:
         Returns: vector single embedded vector
         """
         return self.embeddings.embed_query(query)
+
+# # Usage
+# extractor = PDFExtractor()
+# extracted_text = extractor.extract()
+# chunker = TextChunker()
+# chunks = chunker.chunk(extracted_text)
+# embedd = EmbeddingService()
+# chunks = embedd.embed_chunks(chunks)
+# print(chunks[1])
