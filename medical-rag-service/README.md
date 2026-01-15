@@ -17,28 +17,56 @@ Extractor Text (OCR)-> Chunking -> Embedding -> Storage (Chroma DB) -> User Asks
 ## Project Structure
 
 ```
-medical-rag-service/
-├── api/
-│   └── main.py         # Sample PDF (for testing)
+medical-rag-system/
 ├── src/
-│   ├── chunking/
-│   │   └── semantic.py      # Text chunking logic
-│   ├── document/
-│   │   └── extractor.py     # PDF extraction
-│   ├── embedding/
-│   │   └── openai_embeddings.py  # Embedding service
-│   ├── generation/
-│   │   ├── openai_llm.py    # LLM service
-│   │   └── prompt_template.py    # Prompt templates
-│   └── retrieval/
-│       └── chroma_db.py     # Vector store service
-├── data/
-│   └── fake-aps.pdf         # Sample PDF (for testing)
-├── chroma_db/               # Vector store (created after ingestion)
-├── main.py                  # Application Entry point
-├── .env                     # Environment variables
-├── pyproject.toml           # Python dependencies
-└── README.md                # This file
+│   ├── config/                    # Configurations
+│   │   ├── settings.py           # Main settings (env vars, AWS config)
+│   │   ├── chunking.py           # Chunking strategies & params
+│   │   └── aws.py               # AWS service configurations
+│   │
+│   ├── etl/                      # ETL Pipeline (Core)
+│   │   ├── extractor.py          # PDF/S3 extraction
+│   │   ├── chunker.py           # Text chunking
+│   │   ├── embedder.py          # Embedding generation
+│   │   └── loader.py            # Vector DB loading
+│   │
+│   ├── retrieval/               # Retrieval System
+│   │   ├── vector_store.py      # Vector DB interface
+│   │   ├── retriever.py         # Hybrid search logic
+│   │   └── reranker.py          # Optional result reranking
+│   │
+│   ├── generation/              # Response Generation
+│   │   ├── prompts.py           # Prompt templates
+│   │   └── llm.py              # LLM client (Bedrock/OpenAI)
+│   │
+│   ├── api/                     # FastAPI Application
+│   │   ├── main.py             # App entry point
+│   │   ├── routes/             # API endpoints
+│   │   └── middleware/         # Auth, logging, CORS
+│   │
+│   └── utils/                   # Shared utilities
+│       ├── aws_client.py       # AWS service clients
+│       ├── file_handlers.py    # PDF/text processing
+│       └── logging.py          # Logging setup
+│
+├── tests/                       # Test files
+│   ├── unit/                   # Unit tests
+│   ├── integration/            # Integration tests
+│   └── fixtures/               # Test data
+│
+├── deployment/                  # Deployment files
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   └── requirements.txt
+│
+├── notebooks/                   # Jupyter notebooks
+│   └── exploration.ipynb       # Experimentation
+│
+├── .env.example                 # Env template
+├── .gitignore
+├── README.md
+└── pyproject.toml              # Project config
+
 ```
 
 ## Prerequisites
