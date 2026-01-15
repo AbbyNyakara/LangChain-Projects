@@ -255,56 +255,56 @@ class DocumentChunkingPipeline:
                 'original_file': original_filename
             }
 
-test_file = "/Users/abigaelmogusu/projects/LangChain-Projects/medical-rag-service/data/fake-aps.pdf"
+# test_file = "/Users/abigaelmogusu/projects/LangChain-Projects/medical-rag-service/data/fake-aps.pdf"
 
-extractor = DocumentOCRExtractor(bucket="medical-rag-docs-abigael-2026", region="us-east-1")
-print("TESTING DOCUMENT CHUNKING PIPELINE")
+# extractor = DocumentOCRExtractor(bucket="medical-rag-docs-abigael-2026", region="us-east-1")
+# print("TESTING DOCUMENT CHUNKING PIPELINE")
 
-extraction_result = extractor.process_document(test_file)
-print(f"  - Uploaded to S3: {extraction_result['uploaded_to']}")
-extracted_text_s3_key = extraction_result['saved_text_to']
-original_filename = extraction_result['original_file']
+# extraction_result = extractor.process_document(test_file)
+# print(f"  - Uploaded to S3: {extraction_result['uploaded_to']}")
+# extracted_text_s3_key = extraction_result['saved_text_to']
+# original_filename = extraction_result['original_file']
 
-## Chunk text
-chunker = DocumentChunkingPipeline(ChunkingConfig())  # ← Add ()
-chunking_result = chunker.process_document(text_s3_key=extracted_text_s3_key, original_filename=original_filename)
+# ## Chunk text
+# chunker = DocumentChunkingPipeline(ChunkingConfig())  # ← Add ()
+# chunking_result = chunker.process_document(text_s3_key=extracted_text_s3_key, original_filename=original_filename)
 
-if not chunking_result['success']:
-    print(f"✗ Chunking failed: {chunking_result['error']}")
+# if not chunking_result['success']:
+#     print(f"✗ Chunking failed: {chunking_result['error']}")
    
-print(f"✓ Chunking successful!")
-print(f"  - Document ID: {chunking_result['document_id']}")
-print(f"  - Total chunks: {chunking_result['total_chunks']}")
-print(f"  - Total characters: {chunking_result['total_characters']}")
-print(f"  - Average chunk size: {chunking_result['avg_chunk_size']:.0f} chars")
-print(f"  - Chunks S3 key: {chunking_result['chunks_s3_key']}\n")
+# print(f"✓ Chunking successful!")
+# print(f"  - Document ID: {chunking_result['document_id']}")
+# print(f"  - Total chunks: {chunking_result['total_chunks']}")
+# print(f"  - Total characters: {chunking_result['total_characters']}")
+# print(f"  - Average chunk size: {chunking_result['avg_chunk_size']:.0f} chars")
+# print(f"  - Chunks S3 key: {chunking_result['chunks_s3_key']}\n")
 
-document_id = chunking_result['document_id']
-chunks_s3_key = chunking_result['chunks_s3_key']
+# document_id = chunking_result['document_id']
+# chunks_s3_key = chunking_result['chunks_s3_key']
 
-### S3 STORAGE:
-chunks_data = chunker.fetch_chunks_from_s3(chunks_s3_key)
-print(f"✓ Chunks retrieved from S3: {len(chunks_data)} items\n")
+# ### S3 STORAGE:
+# chunks_data = chunker.fetch_chunks_from_s3(chunks_s3_key)
+# print(f"✓ Chunks retrieved from S3: {len(chunks_data)} items\n")
 
-# Show first chunk
-first_chunk = chunks_data[0]
-print(f"  First chunk preview:")
-print(f"    - Chunk ID: {first_chunk['metadata']['chunk_id']}")
-print(f"    - Chunk size: {first_chunk['metadata']['chunk_size']} chars")
-print(f"    - Text preview: {first_chunk['text'][:100]}...\n")
+# # Show first chunk
+# first_chunk = chunks_data[0]
+# print(f"  First chunk preview:")
+# print(f"    - Chunk ID: {first_chunk['metadata']['chunk_id']}")
+# print(f"    - Chunk size: {first_chunk['metadata']['chunk_size']} chars")
+# print(f"    - Text preview: {first_chunk['text'][:100]}...\n")
 
-## DynamoDB 
-doc_metadata = chunker.get_document_metadata(document_id)
+# ## DynamoDB 
+# doc_metadata = chunker.get_document_metadata(document_id)
             
-if doc_metadata:
-    print(f"✓ Document metadata stored in DynamoDB!")
-    print(f"  - Document ID: {doc_metadata.get('document_id')}")
-    print(f"  - Filename: {doc_metadata.get('filename')}")
-    print(f"  - Chunks count: {doc_metadata.get('chunks_count')}")
-    print(f"  - Created at: {doc_metadata.get('created_at')}\n")
-else:
-    print(f"✗ Document metadata not found in DynamoDB\n")
+# if doc_metadata:
+#     print(f"✓ Document metadata stored in DynamoDB!")
+#     print(f"  - Document ID: {doc_metadata.get('document_id')}")
+#     print(f"  - Filename: {doc_metadata.get('filename')}")
+#     print(f"  - Chunks count: {doc_metadata.get('chunks_count')}")
+#     print(f"  - Created at: {doc_metadata.get('created_at')}\n")
+# else:
+#     print(f"✗ Document metadata not found in DynamoDB\n")
     
-chunk_metadata_list = chunker.query_chunks_by_document(document_id)
+# chunk_metadata_list = chunker.query_chunks_by_document(document_id)
             
-print(f"✓ Chunk metadata stored in DynamoDB: {len(chunk_metadata_list)}")
+# print(f"✓ Chunk metadata stored in DynamoDB: {len(chunk_metadata_list)}")

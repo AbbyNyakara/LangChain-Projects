@@ -6,7 +6,6 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
-from langchain_chroma import Chroma
 from pinecone import Pinecone, ServerlessSpec
 import sys
 import os
@@ -65,7 +64,7 @@ class EmbeddingPipeline:
         if config.index_name not in [idx.name for idx in indexes.indexes]:
             self.pc.create_index(
                 name=config.index_name,
-                dimension=config.metric,
+                dimension=config.dimension,
                 metric=config.metric,
                 spec=ServerlessSpec(cloud="aws", region=config.environment)
             )
@@ -178,3 +177,5 @@ class EmbeddingPipeline:
         except Exception as e:
             logger.error("Search failed %s", e)
             raise
+
+
