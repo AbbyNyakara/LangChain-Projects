@@ -1,6 +1,7 @@
 """
 This module handles the 
 """
+from src.etl_pipeline.reranker import RerankerConfig, SimpleReranker
 import boto3
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
@@ -13,6 +14,8 @@ from pathlib import Path
 import json
 import logging
 from datetime import datetime
+
+
 src_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(src_dir))
 
@@ -152,8 +155,8 @@ class EmbeddingPipeline:
             logger.error("Pipeline failed:, %s", e)
             return {'success': False, 'error': str(e)}
 
-    def search(self, query: str, top_k: int = 3) -> List[Dict]:
-        """Embedd user query and similarity Search for similar chunks"""
+    def search_and_rerank(self, query: str, top_k: int = 10) -> List[Dict]:
+        """Embedd user query and similarity Search for similar chunks + reranking"""
         try:
             # Embed query
             query_embedding = self.embeddings.embed_query(query)
@@ -165,17 +168,38 @@ class EmbeddingPipeline:
                 include_metadata=True
             )
 
-            # Format results
-            return [
-                {
-                    'id': match.id,
-                    'score': match.score,
-                    'metadata': match.metadata
-                }
-                for match in results.matches
-            ]
+            if not results.matches:
+                return {'success': True, 'results': []}
+
+            documents = [m.metadata.get('text', '')
+                         for m in results.matches]
+            doc_ids = [m.id for m in results.matches]
+
+            reranker = SimpleReranker(config=RerankerConfig)
+            reranked_ids, rerank_scores = reranker.rerank_results(
+                query=query,
+                documents=documents,
+                doc_ids=doc_ids
+            )
+
+            # Build final results
+            final_results = []
+            for doc_id, score in zip(reranked_ids, rerank_scores):
+                match = next(m for m in results.matches if m.id == doc_id)
+                final_results.append({
+                    'id': doc_id,
+                    'score': score,
+                    'text': match.metadata.get('text', ''),
+                    'source': match.metadata.get('original_filename', 'unknown')
+                })
+
+            return {
+                'success': True,
+                'initial_results': len(results.matches),
+                'final_results': len(final_results),
+                'results': final_results
+            }
+
         except Exception as e:
             logger.error("Search failed %s", e)
             raise
-
-

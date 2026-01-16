@@ -47,7 +47,7 @@ class ETLPipeline:
             Complete processing result
         """
         try:
-            logger.info(f"Starting ETL pipeline: {file_path}")
+            logger.info("Starting ETL pipeline: %s", file_path)
 
             # ============ STEP 1: EXTRACT ============
             logger.info("STEP 1: Extracting text from PDF...")
@@ -56,8 +56,7 @@ class ETLPipeline:
             if not extraction_result:
                 raise Exception("Extraction failed")
 
-            logger.info(
-                f"✓ Extracted: {extraction_result['text_length']} characters")
+            logger.info("Extracted characters")
 
             # ============ STEP 2: CHUNK ============
             logger.info("STEP 2: Chunking text...")
@@ -67,7 +66,7 @@ class ETLPipeline:
             )
 
             if not chunking_result['success']:
-                raise Exception(f"Chunking failed: {chunking_result['error']}")
+                raise Exception("Chunking failed: %s ",chunking_result['error'])
 
             logger.info(
                 f"✓ Chunked: {chunking_result['total_chunks']} chunks created")
@@ -118,8 +117,8 @@ class ETLPipeline:
                 'original_file': file_path
             }
 
-# pipeline = ETLPipeline(s3_bucket="medical-rag-docs-abigael-2026")
-# file = "/Users/abigaelmogusu/projects/LangChain-Projects/medical-rag-service/data/fake-aps.pdf"
+pipeline = ETLPipeline(s3_bucket="medical-rag-docs-abigael-2026")
+file = "/Users/abigaelmogusu/projects/LangChain-Projects/medical-rag-service/data/fake-aps.pdf"
 
-# result = pipeline.process_document(file_path=file)
-# print(result)
+result = pipeline.process_document(file_path=file)
+print(result)
