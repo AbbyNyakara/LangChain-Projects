@@ -4,8 +4,8 @@ import sys
 from typing import Dict, List
 import logging
 
-# src_dir = Path(__file__).parent.parent
-# sys.path.insert(0, str(src_dir))
+src_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(src_dir))
 
 from src.etl_pipeline.extractor import DocumentOCRExtractor
 from src.etl_pipeline.chunker import ChunkingConfig, DocumentChunkingPipeline
