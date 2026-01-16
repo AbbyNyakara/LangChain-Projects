@@ -40,7 +40,7 @@ class PineconeConfig:
     """Configuration for Pinecone connection"""
     api_key: str = os.environ["PINECONE_API_KEY"]
     environment: str = "us-east-1"
-    index_name: str = "medical-rag-index"  # the vector db name of this project
+    index_name: str = "medical-rag-index" 
     metric: str = "cosine"
     dimension: int = 1536
     spec: Optional[Dict] = None  # For serverless config
@@ -155,8 +155,56 @@ class EmbeddingPipeline:
             logger.error("Pipeline failed:, %s", e)
             return {'success': False, 'error': str(e)}
 
+    # def search_and_rerank(self, query: str, top_k: int = 10) -> List[Dict]:
+    #     """Embedd user query and similarity Search for similar chunks + reranking"""
+    #     try:
+    #         # Embed query
+    #         query_embedding = self.embeddings.embed_query(query)
+
+    #         # Search Pinecone
+    #         results = self.index.query(
+    #             vector=query_embedding,
+    #             top_k=top_k,
+    #             include_metadata=True
+    #         )
+
+    #         if not results.matches:
+    #             return {'success': True, 'results': []}
+
+    #         documents = [m.metadata.get('text', '')
+    #                      for m in results.matches]
+    #         doc_ids = [m.id for m in results.matches]
+
+    #         reranker = SimpleReranker(config=RerankerConfig)
+    #         reranked_ids, rerank_scores = reranker.rerank_results(
+    #             query=query,
+    #             documents=documents,
+    #             doc_ids=doc_ids
+    #         )
+
+    #         # Build final results
+    #         final_results = []
+    #         for doc_id, score in zip(reranked_ids, rerank_scores):
+    #             match = next(m for m in results.matches if m.id == doc_id)
+    #             final_results.append({
+    #                 'id': doc_id,
+    #                 'score': score,
+    #                 'text': match.metadata.get('text', ''),
+    #                 'source': match.metadata.get('original_filename', 'unknown')
+    #             })
+
+    #         return {
+    #             'success': True,
+    #             'initial_results': len(results.matches),
+    #             'final_results': len(final_results),
+    #             'results': final_results
+    #         }
+
+    #     except Exception as e:
+    #         logger.error("Search failed %s", e)
+    #         raise
     def search_and_rerank(self, query: str, top_k: int = 10) -> List[Dict]:
-        """Embedd user query and similarity Search for similar chunks + reranking"""
+        """Embed user query and similarity Search for similar chunks (reranking disabled)"""
         try:
             # Embed query
             query_embedding = self.embeddings.embed_query(query)
@@ -171,27 +219,18 @@ class EmbeddingPipeline:
             if not results.matches:
                 return {'success': True, 'results': []}
 
-            documents = [m.metadata.get('text', '')
-                         for m in results.matches]
-            doc_ids = [m.id for m in results.matches]
-
-            reranker = SimpleReranker(config=RerankerConfig)
-            reranked_ids, rerank_scores = reranker.rerank_results(
-                query=query,
-                documents=documents,
-                doc_ids=doc_ids
-            )
-
-            # Build final results
+            # Skip reranking and use original Pinecone results
             final_results = []
-            for doc_id, score in zip(reranked_ids, rerank_scores):
-                match = next(m for m in results.matches if m.id == doc_id)
+            for match in results.matches:
                 final_results.append({
-                    'id': doc_id,
-                    'score': score,
-                    'text': match.metadata.get('text', ''),
-                    'source': match.metadata.get('original_filename', 'unknown')
+                    'id': match.id,
+                    'score': float(match.score),
+                    'text': match.metadata.get('text', '') if match.metadata else '',
+                    'source': match.metadata.get('original_filename', 'unknown') if match.metadata else 'unknown'
                 })
+
+            # If you still want to call the reranker but ignore its results for debugging:
+            # logger.info("Reranking disabled - using original Pinecone results")
 
             return {
                 'success': True,

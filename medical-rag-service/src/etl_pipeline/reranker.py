@@ -17,7 +17,7 @@ class RerankerConfig:
     enable_reranking = True
     api_key = os.environ["COHERE_API_KEY"]
     similarity_threshold = 0.7
-    model = "rerank-english-v3.0",
+    model = "rerank-english-v3.0"
     top_k_rerank: int = 4
 
 

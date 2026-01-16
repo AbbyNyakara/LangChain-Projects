@@ -1,113 +1,216 @@
 import sys
 from pathlib import Path
+import logging
+from typing import Dict, List
 
-src_dir = Path(__file__).parent.parent
+src_dir = Path(__name__).parent.parent
 sys.path.insert(0, str(src_dir))
 
-from dotenv import load_dotenv
-from generation.openai_llm import GenerateService
-from generation.prompt_template import MEDICAL_ASSISTANT_PROMPT
-from retrieval.chroma_db import VectorStoreService
-from embedding.openai_embeddings import EmbeddingService
-from langchain_core.runnables import RunnablePassthrough, RunnableParallel
-from extractor.extractor import PDFExtractor
-from src.chunking.chunker import TextChunker
 
+from src.etl_pipeline.pipeline import ETLPipeline
+from src.etl_pipeline.embedder import EmbeddingPipeline, EmbeddingConfig, PineconeConfig
+from src.generation.prompts import MEDICAL_ASSISTANT_PROMPT, MEDICAL_DIAGNOSIS_PROMPT
+from src.generation.llm import GenerateService
+from src.etl_pipeline.chunker import ChunkingConfig
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
-load_dotenv()
-
-class RAGPipeline:
-    def __init__(self, collection_name='medical_notes', model: str = "gpt-4o-mini", persist_directory: str = None):
-
-        if persist_directory is None:
-            project_root = src_dir.parent
-            persist_directory = str(project_root / "chroma_db")
-
-        # Initialize services
-        self.vector_store_service = VectorStoreService(
-            collection_name=collection_name,
-            persist_directory=persist_directory)
-
-        self.generate_service = GenerateService(model=model)
-        self.prompt_template = MEDICAL_ASSISTANT_PROMPT
-
-        # Load vector Store 
-        try:
-            self.vector_store_service.load_vector_store()
-        except Exception as e: # incase it hasnt been created
-            print(f"Note: Could not load existing vector store: {e}")
-            print("A new vector store will be created upon ingestion.")
-
-        # Then build the chain
-        self.rag_chain = self._build_chain()
-
-    def _build_chain(self):
-        """Builds the LangChain retriever -> context preparation -> LLM """
-        retriever = self.vector_store_service.as_retriever(k=3)
-
-        rag_chain = (
-            {"context": retriever | self._format_documents,
-             "question": RunnablePassthrough()}
-            | self.prompt_template
-            | self.generate_service.llm
+class MedicalRAGPipeline:
+    """
+    Complete Medical RAG Pipeline
+    Orchestrates: ETL (indexing) → Retrieval (search) → Generation (LLM)
+    """
+    def __init__(
+            self, 
+            s3_bucket: str,
+            embedding_config: EmbeddingConfig = None,
+            pinecone_config: PineconeConfig = None,
+            chunking_config: ChunkingConfig = None,
+            llm_config: Dict = None,
+            region: str = "us-east-1"
+            ):
+        """
+        Initialize RAG pipeline with all components
+        
+        Args:
+            s3_bucket: S3 bucket for documents
+            embedding_config: OpenAI embedding config
+            pinecone_config: Pinecone vector DB config
+            chunking_config: Document chunking config
+            llm_config: LLM generation config
+            region: AWS region
+        """
+        self.s3_bucket = s3_bucket
+        self.region = region
+        
+        logger.info("Initializing Medical RAG Pipeline...")
+        # ==== ETL-For indexing
+        self.etl_pipeline = ETLPipeline(
+            s3_bucket=s3_bucket,
+            embedding_config=embedding_config or EmbeddingConfig(),
+            pinecone_config=pinecone_config or PineconeConfig(),
+            chunking_config=chunking_config or ChunkingConfig(),
+            region=region
         )
 
-        return rag_chain
+         # ============ LLM COMPONENT (for generation) ============
+        llm_config = llm_config or {}
+        self.generator = GenerateService(
+            model=llm_config.get('model', 'gpt-4-turbo'),
+            temperature=llm_config.get('temperature', 0.2),
+            max_tokens=llm_config.get('max_tokens', 500),
+            timeout=llm_config.get('timeout', 30),
+            retry_attempts=llm_config.get('retry_attempts', 3)
+        )
 
-    @staticmethod
-    def _format_documents(docs):
-        """Format retrieved documents into context string."""
-        if not docs:
-            return "No relevant documents found."
-        return "\n\n".join([doc.page_content for doc in docs])
+        self.prompt = MEDICAL_ASSISTANT_PROMPT
+        logger.info("Medical RAG Pipeline initialized")
 
-    def query(self, question: str) -> dict:
-        '''Invokes the chain'''
+
+    # TODO 1- INDDEX DOCUMENTS
+
+    def index_document(self, file_path: str) -> Dict:
         try:
-            
-            answer = self.rag_chain.invoke(question)
-            retriever = self.vector_store_service.as_retriever(k=3)
-            source_docs = retriever.invoke(question)
-
-            return {
-                "question": question,
-                "answer": answer.content if hasattr(answer, 'content') else str(answer),
-                "sources": source_docs,
-                "num_sources": len(source_docs),
-            }
+            result = self.etl_pipeline.process_document(file_path)
+            return result # if succesful
         except Exception as e:
-            return {
-                "question": question,
-                "answer": f"Error processing query: {str(e)}",
-                "sources": [],
-                "num_sources": 0,
-            }
-
-    def ingest(self, pdf_path: Path):
-        """Ingests a pdf document into the vector store"""
-        try:
-            # Extract pdf
-            extractor = PDFExtractor(pdf_path)
-            # text = extract_pdf_text(pdf_path)
-            text = extractor.extract()
-            print(f"✓ Extracted {len(text)} characters from PDF")
-
-            # Generate the chunks
-            chunker = TextChunker()
-            chunks = chunker.chunk(text)
-            print(f"✓ Created {len(chunks)} chunks from the document")
-
-            # Store in vector DB
-            self.vector_store_service.create_vector_store(chunks=chunks)
-            print("✓ Successfully stored chunks in vector database")
-
-            # Rebuild chain with updated retriever
-            self.rag_chain = self._build_chain()
-            print("✓ RAG chain rebuilt with updated documents")
-
-            return chunks
-        except Exception as e:
-            print(f"Error during ingestion: {e}")
+            logger.error("Error loading document %s", e)
             raise
 
+    # TODO 2 - RETRIEVE CONTEXT
+
+    def _format_context(self, search_results: List[Dict]) -> str:
+        """
+        Format search results into context string for LLM 
+        Args:
+            search_results: List of search result dicts
+        Returns:
+            Formatted context string
+        """
+        if not search_results:
+            return "No context available."
+        
+        context_parts = []
+        
+        for i, result in enumerate(search_results, 1):
+            text = result.get('text', '')
+            
+            metadata = result.get('metadata', {})
+            source = metadata.get('original_filename', 'Unknown source')
+            score = result.get('score', 0)
+   
+            context_parts.append(
+                f"[{i}] {source} (relevance: {score:.2f}):\n{text}"
+            )
+        return "\n\n---\n\n".join(context_parts)
+
+    def retrieve_context(self, query: str, top_k: int = 5) -> Dict:
+        """Search with reranking"""
+        logger.info("Retrieving context")
+        
+        try:
+            # Use search_and_rerank instead of simple search
+            search_result = self.etl_pipeline.embedder.search_and_rerank(
+                query=query,
+                top_k=10  # Get 10, rerank to 5
+            )
+            
+            if not search_result['success'] or not search_result['results']:
+                return {
+                    'success': True,
+                    'query': query,
+                    'results': [],
+                    'context': "No relevant documents found.",
+                    'num_results': 0
+                }   
+            # Format context
+            context = self._format_context(search_result['results'])
+            
+            return {
+                'success': True,
+                'query': query,
+                'results': search_result['results'],
+                'context': context,
+                'num_results': len(search_result['results'])
+            }
+        except Exception as e:
+            logger.error("Retrieval failed")
+            
+            return {
+                'success': False,
+                'error': str(e),
+                'context': "Error retrieving documents.",
+                'num_results': 0
+            }
+        
+    # TODO 3- GENERATE ANSWER
+    def generate_answer(self, query:str, context: str,use_chain: bool = True):
+        """Generate answer from query and context using LLM"""
+        try:
+            if use_chain:
+                answer = self.generator.generate_with_chain(self.prompt,context,query)
+            else:
+                answer = self.generator.generate_with_llm(self.prompt, context, query)
+            return answer
+        
+        except Exception as e:
+            logger.error(f"Generation failed: {e}")
+            return f"Error generating answer: {str(e)}"
+        
+    ###### ========COMPLETE FLOW ===========
+
+    def answer_question(self, query: str, top_k: int = 5) -> Dict:
+        """
+        Complete RAG flow: Retrieve → Generate
+        This is the main entry point for user queries
+        """
+        try:
+            result = self.retrieve_context(query, top_k)
+            if not result['success']:
+                logger.error("Error retrieving")
+
+            answer = self.generate_answer(query, context= result['context'])
+            return {
+            'success': True,
+            'query': query,
+            'answer': answer,
+            'sources': result.get('results', []),
+            'num_sources': result['num_results']
+            }
+    
+        except Exception as e:
+            logger.error("RAG pipeline exception %s", e)
+            raise
+    
+
+if __name__ == "__main__":
+    file_to_upload = "/Users/abigaelmogusu/projects/LangChain-Projects/medical-rag-service/data/fake-aps.pdf"
+    question = "What is the patient's name?"
+
+    # Initialize pipeline
+    pipeline = MedicalRAGPipeline(s3_bucket="medical-rag-docs-abigael-2026")
+    
+    # Index document
+    print("\n" + "="*60)
+    print("INDEXING DOCUMENT")
+
+    index_result = pipeline.index_document(file_to_upload)
+    print(f"Success: {index_result['success']}")
+    print(f"Chunks: {index_result.get('total_chunks', 'N/A')}")
+    
+    # Answer question
+    print("\n" + "="*60)
+    print("ANSWERING QUESTION")
+    print("="*60)
+    result = pipeline.answer_question(query=question)
+    
+    print(f"\nQuestion: {result['query']}")
+    print(f"Answer: {result['answer']}")
+    print(f"Sources used: {result['num_sources']}")
+    print("="*60)
+
+
+
+    
+    

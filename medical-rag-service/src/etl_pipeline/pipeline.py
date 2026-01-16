@@ -117,8 +117,8 @@ class ETLPipeline:
                 'original_file': file_path
             }
 
-pipeline = ETLPipeline(s3_bucket="medical-rag-docs-abigael-2026")
-file = "/Users/abigaelmogusu/projects/LangChain-Projects/medical-rag-service/data/fake-aps.pdf"
+# pipeline = ETLPipeline(s3_bucket="medical-rag-docs-abigael-2026")
+# file = "/Users/abigaelmogusu/projects/LangChain-Projects/medical-rag-service/data/fake-aps.pdf"
 
-result = pipeline.process_document(file_path=file)
-print(result)
+# result = pipeline.process_document(file_path=file)
+# print(result)
