@@ -1,6 +1,6 @@
 """
-Document Chunking Pipeline with Metadata Storage
-Chunks extracted text and stores in S3 + DynamoDB
+Document Chunking Pipeline with S3 Storage
+Chunks extracted text and stores in S3
 """
 
 import boto3
@@ -14,39 +14,38 @@ import json
 import sys
 from dataclasses import dataclass
 
+
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
+
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+
 from src.etl_pipeline.extractor import DocumentOCRExtractor
+
 
 @dataclass
 class ChunkingConfig:
-    """Configuration for chunking and metadata storage"""
+    """Configuration for chunking and S3 storage"""
     chunk_size: int = 1000
     chunk_overlap: int = 200
     s3_bucket: str = "medical-rag-docs-abigael-2026"
-    documents_table: str = "medical-rag-documents"  
-    chunks_table: str = "medical-rag-chunks"        
     region: str = "us-east-1"
 
 
 class DocumentChunkingPipeline:
     """
-    Complete pipeline: Extract → Chunk → Store in S3 → Store metadata in DynamoDB
+    Complete pipeline: Extract → Chunk → Store in S3
     """
 
     def __init__(self, config: ChunkingConfig):
         self.config = config
         self.s3 = boto3.client('s3', region_name=config.region)
-        self.dynamodb = boto3.resource('dynamodb', region_name=config.region)
-        # self.table = self.dynamodb.Table(config.dynamodb_table)
-        self.documents_table = self.dynamodb.Table(config.documents_table)  # ← New
-        self.chunks_table = self.dynamodb.Table(config.chunks_table) 
 
     # ============ S3 Operations ============
+
     def fetch_extracted_text(self, s3_key: str) -> str:
         """Fetch extracted text from S3"""
         try:
@@ -118,7 +117,7 @@ class DocumentChunkingPipeline:
             logger.error(f"Chunking failed: {e}")
             raise
 
-    def create_chunk_metadata(self, chunks: List[str], original_filename: str, text_s3_key: str, document_id: Optional[str] = None) -> List[Dict]:
+    def create_chunk_metadata(self, chunks: List[str], original_filename: str, text_s3_key: str, document_id: Optional[str] = None) -> tuple[List[Dict], str]:
         """Create metadata for each chunk"""
         if document_id is None:
             document_id = str(uuid.uuid4())
@@ -139,63 +138,11 @@ class DocumentChunkingPipeline:
 
         return metadata_list, document_id
 
-    # ============ DynamoDB Operations ============
-
-    def store_document_metadata(self, document_id: str, filename: str, chunks_count: int, s3_key: str) -> bool:
-        """Store document-level metadata in DynamoDB"""
-        try:
-            self.documents_table.put_item(Item={
-                'document_id': document_id,
-                'filename': filename,
-                'chunks_count': chunks_count,
-                's3_key': s3_key,
-                'created_at': datetime.now().isoformat()
-            })
-            logger.info("Stored document metadata: %s", document_id)
-            return True
-        except Exception as e:
-            logger.error(f"Failed to store document metadata: {e}")
-            raise
-
-    def store_chunk_metadata(self, chunk_metadata_list: List[Dict]) -> bool:
-        """Store chunk-level metadata in DynamoDB"""
-        try:
-            with self.chunks_table.batch_writer() as batch:  # ← Remove batch_size
-                for chunk_meta in chunk_metadata_list:
-                    batch.put_item(Item=chunk_meta)
-            logger.info(f"Stored {len(chunk_metadata_list)} chunk metadata items")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to store chunk metadata: {e}")
-            raise
-
-
-    def get_document_metadata(self, document_id: str) -> Dict:
-        """Retrieve document metadata"""
-        try:
-            response = self.documents_table.get_item(Key={'document_id': document_id})
-            return response.get('Item', {})
-        except Exception as e:
-            logger.error(f"Failed to get document metadata: {e}")
-            raise
-
-    def query_chunks_by_document(self, document_id: str) -> List[Dict]:
-        """Query all chunks for a document"""
-        try:
-            response = self.chunks_table.query(
-                KeyConditionExpression='document_id = :doc_id',
-                ExpressionAttributeValues={':doc_id': document_id}
-            )
-            return response.get('Items', [])
-        except Exception as e:
-            logger.error(f"Failed to query chunks: {e}")
-            raise
-
     # ============ Main Pipeline ============
 
     def process_document(self, text_s3_key: str, original_filename: str, document_id: Optional[str] = None) -> Dict:
         """
-        Complete pipeline: Fetch → Chunk → Store in S3 → Store in DynamoDB
+        Complete pipeline: Fetch → Chunk → Store in S3
         
         Args:
             text_s3_key: S3 key of extracted text
@@ -222,17 +169,6 @@ class DocumentChunkingPipeline:
             # Step 4: Save chunks to S3
             chunks_s3_key = self.save_chunks_to_s3(chunks, chunk_metadata_list, original_filename)
 
-            # Step 5: Store document metadata in DynamoDB
-            self.store_document_metadata(
-                document_id=doc_id,
-                filename=original_filename,
-                chunks_count=len(chunks),
-                s3_key=chunks_s3_key
-            )
-
-            # Step 6: Store chunk metadata in DynamoDB
-            self.store_chunk_metadata(chunk_metadata_list)
-
             result = {
                 'success': True,
                 'document_id': doc_id,
@@ -244,7 +180,7 @@ class DocumentChunkingPipeline:
                 'timestamp': datetime.now().isoformat()
             }
 
-            logger.info("Processing complete chunks created")
+            logger.info("Processing complete: %d chunks created", len(chunks))
             return result
 
         except Exception as e:
@@ -254,57 +190,3 @@ class DocumentChunkingPipeline:
                 'error': str(e),
                 'original_file': original_filename
             }
-
-# test_file = "/Users/abigaelmogusu/projects/LangChain-Projects/medical-rag-service/data/fake-aps.pdf"
-
-# extractor = DocumentOCRExtractor(bucket="medical-rag-docs-abigael-2026", region="us-east-1")
-# print("TESTING DOCUMENT CHUNKING PIPELINE")
-
-# extraction_result = extractor.process_document(test_file)
-# print(f"  - Uploaded to S3: {extraction_result['uploaded_to']}")
-# extracted_text_s3_key = extraction_result['saved_text_to']
-# original_filename = extraction_result['original_file']
-
-# ## Chunk text
-# chunker = DocumentChunkingPipeline(ChunkingConfig())  # ← Add ()
-# chunking_result = chunker.process_document(text_s3_key=extracted_text_s3_key, original_filename=original_filename)
-
-# if not chunking_result['success']:
-#     print(f"✗ Chunking failed: {chunking_result['error']}")
-   
-# print(f"✓ Chunking successful!")
-# print(f"  - Document ID: {chunking_result['document_id']}")
-# print(f"  - Total chunks: {chunking_result['total_chunks']}")
-# print(f"  - Total characters: {chunking_result['total_characters']}")
-# print(f"  - Average chunk size: {chunking_result['avg_chunk_size']:.0f} chars")
-# print(f"  - Chunks S3 key: {chunking_result['chunks_s3_key']}\n")
-
-# document_id = chunking_result['document_id']
-# chunks_s3_key = chunking_result['chunks_s3_key']
-
-# ### S3 STORAGE:
-# chunks_data = chunker.fetch_chunks_from_s3(chunks_s3_key)
-# print(f"✓ Chunks retrieved from S3: {len(chunks_data)} items\n")
-
-# # Show first chunk
-# first_chunk = chunks_data[0]
-# print(f"  First chunk preview:")
-# print(f"    - Chunk ID: {first_chunk['metadata']['chunk_id']}")
-# print(f"    - Chunk size: {first_chunk['metadata']['chunk_size']} chars")
-# print(f"    - Text preview: {first_chunk['text'][:100]}...\n")
-
-# ## DynamoDB 
-# doc_metadata = chunker.get_document_metadata(document_id)
-            
-# if doc_metadata:
-#     print(f"✓ Document metadata stored in DynamoDB!")
-#     print(f"  - Document ID: {doc_metadata.get('document_id')}")
-#     print(f"  - Filename: {doc_metadata.get('filename')}")
-#     print(f"  - Chunks count: {doc_metadata.get('chunks_count')}")
-#     print(f"  - Created at: {doc_metadata.get('created_at')}\n")
-# else:
-#     print(f"✗ Document metadata not found in DynamoDB\n")
-    
-# chunk_metadata_list = chunker.query_chunks_by_document(document_id)
-            
-# print(f"✓ Chunk metadata stored in DynamoDB: {len(chunk_metadata_list)}")

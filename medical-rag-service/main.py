@@ -1,46 +1,37 @@
-import sys
-from pathlib import Path
-from contextlib import asynccontextmanager
-
-# Setup paths
-src_dir = Path(__file__).parent / "src"
-sys.path.insert(0, str(src_dir))
-
+from pinecone import Pinecone
 from dotenv import load_dotenv
-import uvicorn
-from api.main import app
-from src.rag.pipeline import RAGPipeline
+import os
+from langchain_openai import OpenAIEmbeddings
 
 load_dotenv()
 
-rag_pipeline = None
+query = "what is the patient's name?"
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
-@asynccontextmanager
-async def lifespan(app):
-    """Startup and shutdown logic"""
-    global rag_pipeline
-    
-    # STARTUP
-    project_root = Path(__file__).parent
-    chroma_db_path = project_root / "chroma_db"
-    pdf_path = project_root / "data" / "fake-aps.pdf"
-    
-    rag_pipeline = RAGPipeline(persist_directory=str(chroma_db_path))
-    
-    # Auto-ingest if vector store is empty
-    result = rag_pipeline.query("What are the patient's symptoms?")
-    if result["num_sources"] == 0 and pdf_path.exists():
-        rag_pipeline.ingest(pdf_path)
-    
-    # Set pipeline in the app
-    import api.main
-    api.main.rag_pipeline = rag_pipeline
-    
-    yield
-    
+vectors = embeddings.embed_query(query)
 
-# Add lifespan to app
-app.router.lifespan = lifespan
+# pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+# index = pc.Index(name="medical-rag-index")
+# response = index.query(
+#     vector=vectors, 
+#     top_k=3, 
+#     include_metadata=True
+# )
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# for match in response["matches"]:
+#     print("Score:", match["score"])
+#     print("Text:", match["metadata"].get("text"))
+#     print("-" * 50)
+
+
+from pinecone import Pinecone
+import os
+
+pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+
+# indexes = pc.list_indexes()
+# print(indexes)
+
+index = pc.Index("medical-rag-index")
+stats = index.describe_index_stats()
+print(stats)

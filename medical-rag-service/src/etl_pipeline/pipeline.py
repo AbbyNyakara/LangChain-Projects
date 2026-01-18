@@ -4,8 +4,8 @@ import sys
 from typing import Dict, List
 import logging
 
-# src_dir = Path(__file__).parent.parent
-# sys.path.insert(0, str(src_dir))
+src_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(src_dir))
 
 from src.etl_pipeline.extractor import DocumentOCRExtractor
 from src.etl_pipeline.chunker import ChunkingConfig, DocumentChunkingPipeline
@@ -117,8 +117,8 @@ class ETLPipeline:
                 'original_file': file_path
             }
 
-pipeline = ETLPipeline(s3_bucket="medical-rag-docs-abigael-2026")
-file = "/Users/abigaelmogusu/projects/LangChain-Projects/medical-rag-service/data/fake-aps.pdf"
+# pipeline = ETLPipeline(s3_bucket="medical-rag-docs-abigael-2026")
+# file = "/Users/abigaelmogusu/projects/LangChain-Projects/medical-rag-service/data/fake-aps.pdf"
 
-result = pipeline.process_document(file_path=file)
-print(result)
+# result = pipeline.process_document(file_path=file)
+# print(result)
