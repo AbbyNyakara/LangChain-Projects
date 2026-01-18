@@ -191,7 +191,7 @@ class MedicalRAGPipeline:
 
 if __name__ == "__main__":
     file_to_upload = "/Users/abigaelmogusu/projects/LangChain-Projects/medical-rag-service/data/fake-aps.pdf"
-    question = "What are the patient's symptoms?"
+    question = "Who is the doctor?"
 
     # Initialize pipeline
     pipeline = MedicalRAGPipeline(s3_bucket="medical-rag-docs-abigael-2026")
