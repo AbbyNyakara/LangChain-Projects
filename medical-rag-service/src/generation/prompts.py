@@ -25,3 +25,19 @@ MEDICAL_ASSISTANT_PROMPT = PromptTemplate(
         """
     )
 )
+
+
+MEDICAL_DIAGNOSIS_PROMPT = PromptTemplate(
+    input_variables=["context", "question"],
+    template="""You are a medical assistant analyzing diagnostic information. Use ONLY the provided context.
+
+IMPORTANT: You are NOT diagnosing. You are summarizing what the documents say.
+
+Medical Context:
+{context}
+
+Question: {question}
+
+Summary based on documents:"""
+)
+
