@@ -68,8 +68,7 @@ class ETLPipeline:
             if not chunking_result['success']:
                 raise Exception("Chunking failed: %s ",chunking_result['error'])
 
-            logger.info(
-                f"✓ Chunked: {chunking_result['total_chunks']} chunks created")
+            logger.info("Chunks created")
 
             # ============ STEP 3: EMBED ============
             logger.info("STEP 3: Embedding chunks...")
