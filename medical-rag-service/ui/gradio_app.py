@@ -10,7 +10,7 @@ from typing import Tuple
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-# API endpoint
+# RAG API endpoint
 API_URL = "http://localhost:8000"
 
 # ============ API HELPER FUNCTIONS ============
@@ -19,7 +19,6 @@ def upload_document(file) -> Tuple[str, str]:
     """Upload document to API"""
     if file is None:
         return "Error", "Please select a file"
-    
     try:
         with open(file, 'rb') as f:
             files = {'file': f}
